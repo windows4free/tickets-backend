@@ -1,22 +1,27 @@
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
+import path from 'path';
+import { fileURLToPath } from 'url';
 import fallaRoutes from './routes/fallaRoutes.js';
 import authRoutes from './routes/authRoutes.js';
 
 dotenv.config();
 
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-// CORS restringido al origen del frontend definido en las variables de entorno
 const CORS_ORIGIN = process.env.CORS_ORIGIN || '*';
 app.use(cors({ origin: CORS_ORIGIN }));
 
 app.use(express.json());
 
-// Ruta de salud: no toca la base de datos, solo confirma que el servidor
-// está corriendo. Útil para diagnosticar problemas de despliegue.
+// Servir archivos subidos (evidencias de fallas)
+app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
+
 app.get('/api/salud', (req, res) => {
     res.json({ estado: 'ok', mensaje: 'El servidor está corriendo' });
 });
@@ -24,7 +29,6 @@ app.get('/api/salud', (req, res) => {
 app.use('/api/auth', authRoutes);
 app.use('/api/fallas', fallaRoutes);
 
-// Manejo global de rutas no definidas
 app.use((req, res) => {
     res.status(404).json({ error: 'Ruta no encontrada' });
 });
