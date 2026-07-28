@@ -4,6 +4,10 @@ import Usuario from '../models/usuarioModel.js';
 
 const ROLES_VALIDOS = ['admin', 'reportero'];
 const JWT_EXPIRES_IN = '8h';
+const PASSWORD_MIN_LENGTH = 8;
+
+// Expresión regular simple para validar formato de email (algo@algo.algo)
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 const firmarToken = (usuario) => {
     return jwt.sign(
@@ -20,8 +24,11 @@ export const register = async (req, res) => {
         if (!nombre || !email || !password) {
             return res.status(400).json({ error: 'Nombre, email y contraseña son obligatorios' });
         }
-        if (password.length < 6) {
-            return res.status(400).json({ error: 'La contraseña debe tener al menos 6 caracteres' });
+        if (!EMAIL_REGEX.test(email)) {
+            return res.status(400).json({ error: 'El email no tiene un formato válido' });
+        }
+        if (password.length < PASSWORD_MIN_LENGTH) {
+            return res.status(400).json({ error: `La contraseña debe tener al menos ${PASSWORD_MIN_LENGTH} caracteres` });
         }
         if (rol && !ROLES_VALIDOS.includes(rol)) {
             return res.status(400).json({ error: `El rol debe ser uno de: ${ROLES_VALIDOS.join(', ')}` });
