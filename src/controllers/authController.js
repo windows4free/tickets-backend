@@ -19,7 +19,9 @@ const firmarToken = (usuario) => {
 
 export const register = async (req, res) => {
     try {
-        const { nombre, email, password, rol } = req.body;
+        const { nombre, email, password } = req.body;
+
+        const rol = 'reportero';
 
         if (!nombre || !email || !password) {
             return res.status(400).json({ error: 'Nombre, email y contraseña son obligatorios' });
@@ -30,9 +32,6 @@ export const register = async (req, res) => {
         if (password.length < PASSWORD_MIN_LENGTH) {
             return res.status(400).json({ error: `La contraseña debe tener al menos ${PASSWORD_MIN_LENGTH} caracteres` });
         }
-        if (rol && !ROLES_VALIDOS.includes(rol)) {
-            return res.status(400).json({ error: `El rol debe ser uno de: ${ROLES_VALIDOS.join(', ')}` });
-        }
 
         const existente = await Usuario.getByEmail(email);
         if (existente) {
@@ -42,7 +41,7 @@ export const register = async (req, res) => {
         const passwordHash = await bcrypt.hash(password, 10);
         const id = await Usuario.create(nombre, email, passwordHash, rol);
 
-        const usuario = { id, nombre, email, rol: rol || 'reportero' };
+        const usuario = { id, nombre, email, rol };
         const token = firmarToken(usuario);
 
         res.status(201).json({ token, usuario });
@@ -78,6 +77,36 @@ export const login = async (req, res) => {
     } catch (error) {
         console.error('[authController.login]', error);
         res.status(500).json({ error: 'Error al iniciar sesión' });
+    }
+};
+
+export const crearAdmin = async (req, res) => {
+    try {
+        const { nombre, email, password } = req.body;
+
+        if (!nombre || !email || !password) {
+            return res.status(400).json({ error: 'Nombre, email y contraseña son obligatorios' });
+        }
+        if (!EMAIL_REGEX.test(email)) {
+            return res.status(400).json({ error: 'El email no tiene un formato válido' });
+        }
+        if (password.length < PASSWORD_MIN_LENGTH) {
+            return res.status(400).json({ error: `La contraseña debe tener al menos ${PASSWORD_MIN_LENGTH} caracteres` });
+        }
+
+        const existente = await Usuario.getByEmail(email);
+        if (existente) {
+            return res.status(409).json({ error: 'Ya existe una cuenta con ese email' });
+        }
+
+        const passwordHash = await bcrypt.hash(password, 10);
+        const id = await Usuario.create(nombre, email, passwordHash, 'admin');
+
+        const usuario = { id, nombre, email, rol: 'admin' };
+        res.status(201).json({ usuario });
+    } catch (error) {
+        console.error('[authController.crearAdmin]', error);
+        res.status(500).json({ error: 'Error al crear el administrador' });
     }
 };
 
